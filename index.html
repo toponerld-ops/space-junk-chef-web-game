@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🚀 SPACE JUNK CHEF</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Bangers&family=VT323&display=swap');
+
+:root {
+  --bg: #080818;
+  --neon-green: #39ff14;
+  --neon-pink: #ff006e;
+  --neon-yellow: #ffe135;
+  --neon-blue: #00f5ff;
+  --neon-orange: #ff6b35;
+  --purple: #bf5fff;
+  --panel: rgba(10,10,30,0.85);
+  --border: #1a1a4a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  overflow-x: hidden;
+  cursor: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><text y='24' font-size='24'>🚀</text></svg>") 8 8, auto;
+  user-select: none;
+}
+
+/* ===== ANIMATED BG ===== */
+#bg-canvas { position: fixed; inset: 0; z-index: 0; }
+
+/* ===== SCANLINES ===== */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px);
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ===== GAME WRAP ===== */
+#game-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+/* ===== HEADER ===== */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.logo {
+  font-family: 'Bangers', cursive;
+  font-size: 36px;
+  letter-spacing: 3px;
+  color: var(--neon-yellow);
+  text-shadow: 3px 3px 0 var(--neon-orange), 0 0 30px var(--neon-yellow);
+  line-height: 1;
+}
+
+.logo span { color: var(--neon-pink); text-shadow: 3px 3px 0 #8b0040, 0 0 30px var(--neon-pink); }
+
+.hud {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hud-pill {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 20px;
+}
+
+.hud-pill .val {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: var(--neon-yellow);
+}
+
+/* ===== TIMER BAR ===== */
+#timer-wrap {
+  width: 100%;
+  height: 16px;
+  background: #111;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+#timer-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--neon-green), var(--neon-yellow));
+  transition: width 1s linear, background 0.5s;
+  border-radius: 6px;
+  position: relative;
+}
+
+#timer-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 60%, rgba(255,255,255,0.3));
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer { 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+#timer-bar.danger { background: linear-gradient(90deg, var(--neon-pink), #ff4400); animation: shake-bar 0.3s infinite; }
+@keyframes shake-bar { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.3)} }
+
+#timer-text {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #000;
+  mix-blend-mode: difference;
+  filter: invert(1);
+}
+
+/* ===== MAIN GRID ===== */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 10px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.panel-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  color: var(--purple);
+}
+
+/* ===== CUSTOMER PANEL ===== */
+#customer-panel { position: relative; overflow: hidden; }
+
+.alien-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+#alien-meme {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 3px solid var(--purple);
+  flex-shrink: 0;
+  image-rendering: auto;
+  filter: drop-shadow(0 0 12px var(--purple));
+}
+
+.alien-bubble {
+  flex: 1;
+  background: #0d0d28;
+  border: 2px solid var(--purple);
+  border-radius: 8px;
+  padding: 10px;
+  position: relative;
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%,100%{border-color:var(--purple)}
+  50%{border-color:var(--neon-pink)}
+}
+
+.alien-bubble::before {
+  content: '◀';
+  position: absolute;
+  left: -18px;
+  top: 12px;
+  color: var(--purple);
+  font-size: 20px;
+}
+
+#alien-name-txt {
+  font-family: 'Bangers', cursive;
+  font-size: 22px;
+  color: var(--neon-pink);
+  letter-spacing: 1px;
+}
+
+#alien-order-txt {
+  font-size: 17px;
+  color: #ccd;
+  line-height: 1.3;
+  margin: 4px 0 8px;
+  min-height: 48px;
+}
+
+.needed-label {
+  font-size: 13px;
+  color: var(--purple);
+  margin-bottom: 4px;
+}
+
+#recipe-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.rtag {
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 16px;
+  border: 2px solid var(--neon-blue);
+  background: #0a0a25;
+  color: var(--neon-blue);
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.rtag.done {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  background: #0a250a;
+  text-decoration: line-through;
+  animation: pop 0.3s cubic-bezier(0.36,0.07,0.19,0.97);
+}
+
+@keyframes pop {
+  0%{transform:scale(1)} 40%{transform:scale(1.4)} 100%{transform:scale(1)}
+}
+
+/* ===== DISH PANEL ===== */
+#dish-panel {}
+
+#drop-zone {
+  min-height: 100px;
+  border: 3px dashed var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  align-content: flex-start;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+#drop-zone.drag-over {
+  border-color: var(--neon-green);
+  background: rgba(57,255,20,0.05);
+}
+
+#drop-zone.empty-hint::after {
+  content: 'DRAG ingredients here or click them 👇';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--border);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.dish-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #0f2a0f;
+  border: 2px solid var(--neon-green);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 18px;
+  cursor: pointer;
+  animation: chip-in 0.2s cubic-bezier(0.36,0.07,0.19,0.97);
+  transition: background 0.15s;
+}
+
+@keyframes chip-in { from{transform:scale(0.5) rotate(-10deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+
+.dish-chip:hover { background: #2a0f0f; border-color: var(--neon-pink); }
+.dish-chip .x { color: var(--neon-pink); font-size: 14px; margin-left: 2px; }
+
+/* ===== SERVE BTN ===== */
+#serve-btn {
+  width: 100%;
+  font-family: 'Bangers', cursive;
+  font-size: 26px;
+  letter-spacing: 3px;
+  background: linear-gradient(135deg, var(--neon-orange), var(--neon-pink));
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #700, 0 0 30px rgba(255,0,110,0.4);
+  transition: all 0.1s;
+  text-shadow: 2px 2px 0 #000;
+  position: relative;
+  overflow: hidden;
+}
+
+#serve-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transform: translateX(-100%);
+  animation: sweep 2s ease-in-out infinite;
+}
+
+@keyframes sweep { to { transform: translateX(100%); } }
+
+#serve-btn:hover { transform: translateY(-3px); box-shadow: 0 9px 0 #700, 0 0 50px rgba(255,0,110,0.6); }
+#serve-btn:active { transform: translateY(6px); box-shadow: none; }
+#serve-btn:disabled { background: #333; color: #555; box-shadow: none; animation: none; cursor: not-allowed; }
+#serve-btn:disabled::before { display: none; }
+
+/* ===== CONVEYOR ===== */
+#conveyor-panel { grid-column: 1 / -1; }
+
+.conveyor-track {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 8px 4px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--neon-orange) #111;
+}
+
+.conveyor-track::-webkit-scrollbar { height: 6px; }
+.conveyor-track::-webkit-scrollbar-track { background: #111; }
+.conveyor-track::-webkit-scrollbar-thumb { background: var(--neon-orange); border-radius: 3px; }
+
+.junk-card {
+  flex-shrink: 0;
+  width: 90px;
+  background: #0c0c22;
+  border: 2px solid var(--neon-orange);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: grab;
+  text-align: center;
+  transition: all 0.15s;
+  position: relative;
+  animation: slide-in 0.3s ease;
+}
+
+@keyframes slide-in { from{transform:translateX(80px);opacity:0} to{transform:translateX(0);opacity:1} }
+
+.junk-card:hover {
+  transform: translateY(-8px) rotate(-2deg);
+  border-color: var(--neon-yellow);
+  box-shadow: 0 12px 30px rgba(255,225,53,0.3);
+  z-index: 10;
+}
+
+.junk-card:active { cursor: grabbing; transform: scale(1.1); }
+.junk-card.cant-afford { opacity: 0.35; cursor: not-allowed; border-color: #333; }
+.junk-card.cant-afford:hover { transform: none; box-shadow: none; }
+
+.junk-card .je { font-size: 32px; line-height: 1.2; }
+.junk-card .jn { font-size: 11px; color: #99a; line-height: 1.2; margin: 2px 0; min-height: 28px; }
+.junk-card .jc { font-size: 16px; color: var(--neon-yellow); }
+
+.junk-card.required-highlight {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 16px rgba(0,245,255,0.4);
+  animation: required-pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes required-pulse {
+  from { box-shadow: 0 0 8px rgba(0,245,255,0.3); }
+  to { box-shadow: 0 0 24px rgba(0,245,255,0.8); }
+}
+
+/* ===== EVENTS PANEL ===== */
+#events-panel { grid-column: 1 / -1; max-height: 80px; overflow: hidden; }
+
+#events-list { display: flex; flex-direction: column; gap: 2px; }
+
+.ev { font-size: 17px; animation: ev-in 0.3s ease; color: #6677aa; }
+@keyframes ev-in { from{transform:translateX(-20px);opacity:0} to{transform:none;opacity:1} }
+.ev.g { color: var(--neon-green); }
+.ev.b { color: var(--neon-pink); }
+.ev.y { color: var(--neon-yellow); }
+
+/* ===== CHAOS EVENTS ===== */
+#chaos-banner {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  z-index: 500;
+  font-family: 'Bangers', cursive;
+  font-size: 32px;
+  letter-spacing: 3px;
+  padding: 12px 32px;
+  border-radius: 8px;
+  background: var(--neon-pink);
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  box-shadow: 0 0 60px rgba(255,0,110,0.8);
+  transition: transform 0.4s cubic-bezier(0.36,0.07,0.19,0.97);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#chaos-banner.show { transform: translateX(-50%) translateY(0); }
+
+/* ===== FLOATING SCORE ===== */
+.float-score {
+  position: fixed;
+  pointer-events: none;
+  z-index: 600;
+  font-family: 'Bangers', cursive;
+  font-size: 36px;
+  animation: float-up 1.2s ease forwards;
+}
+
+@keyframes float-up {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-120px) scale(1.5); }
+}
+
+/* ===== MEME POPUP ===== */
+#meme-popup {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 400;
+  max-width: 200px;
+  transform: translateX(250px);
+  transition: transform 0.4s cubic-bezier(0.36,0.07,0.19,0.97);
+  cursor: pointer;
+}
+
+#meme-popup.show { transform: translateX(0); }
+
+#meme-popup img {
+  width: 100%;
+  border-radius: 8px;
+  border: 3px solid var(--neon-yellow);
+  box-shadow: 0 0 30px rgba(255,225,53,0.5);
+}
+
+#meme-popup .meme-caption {
+  font-family: 'Bangers', cursive;
+  font-size: 20px;
+  text-align: center;
+  color: var(--neon-yellow);
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 1px;
+  padding: 4px;
+}
+
+/* ===== OVERLAY ===== */
+#overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+}
+
+#overlay.hidden { display: none; }
+
+.obox {
+  background: #090920;
+  border: 3px solid var(--neon-yellow);
+  border-radius: 12px;
+  padding: 36px 48px;
+  text-align: center;
+  max-width: 520px;
+  width: 92%;
+  box-shadow: 0 0 80px rgba(255,225,53,0.3);
+  animation: obox-in 0.4s cubic-bezier(0.36,0.07,0.19,0.97);
+}
+
+@keyframes obox-in { from{transform:scale(0.6) rotate(-5deg);opacity:0} to{transform:none;opacity:1} }
+
+.otitle {
+  font-family: 'Bangers', cursive;
+  font-size: 52px;
+  letter-spacing: 4px;
+  color: var(--neon-yellow);
+  text-shadow: 4px 4px 0 var(--neon-orange), 0 0 40px var(--neon-yellow);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.osub {
+  font-size: 20px;
+  color: #aab;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.oscore {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 20px;
+  color: var(--neon-green);
+  margin: 16px 0;
+  text-shadow: 0 0 20px var(--neon-green);
+}
+
+.ograde {
+  font-family: 'Bangers', cursive;
+  font-size: 30px;
+  color: var(--neon-pink);
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+
+.oimg {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 3px solid var(--purple);
+  margin: 8px auto 16px;
+  display: block;
+  filter: drop-shadow(0 0 20px var(--purple));
+}
+
+.obtn {
+  font-family: 'Bangers', cursive;
+  font-size: 28px;
+  letter-spacing: 3px;
+  background: linear-gradient(135deg, var(--neon-green), #00bb00);
+  color: #000;
+  border: none;
+  padding: 12px 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #005500;
+  transition: all 0.1s;
+}
+
+.obtn:hover { transform: translateY(-3px); box-shadow: 0 9px 0 #005500; }
+.obtn:active { transform: translateY(6px); box-shadow: none; }
+
+/* ===== COMBO DISPLAY ===== */
+#combo-display {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  z-index: 600;
+  font-family: 'Bangers', cursive;
+  font-size: 72px;
+  letter-spacing: 4px;
+  pointer-events: none;
+  text-shadow: 4px 4px 0 #000;
+  transition: transform 0.2s cubic-bezier(0.36,0.07,0.19,0.97), opacity 0.3s;
+  opacity: 0;
+}
+
+#combo-display.show {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* ===== PARTICLE CANVAS ===== */
+#particle-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 700;
+}
+
+/* special event overlay */
+#event-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+#event-overlay.flashing { animation: flash-bg 0.5s ease; }
+@keyframes flash-bg {
+  0%{opacity:0} 30%{opacity:1} 100%{opacity:0}
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<canvas id="particle-canvas"></canvas>
+<div id="event-overlay"></div>
+<div id="combo-display"></div>
+
+<!-- MEME POPUP -->
+<div id="meme-popup">
+  <img id="meme-img" src="" alt="meme">
+  <div class="meme-caption" id="meme-caption"></div>
+</div>
+
+<!-- CHAOS BANNER -->
+<div id="chaos-banner" id="chaos-banner"></div>
+
+<!-- OVERLAY -->
+<div id="overlay">
+  <div class="obox">
+    <div class="otitle" id="o-title">🚀 SPACE<br>JUNK CHEF</div>
+    <img class="oimg" id="o-img" src="" alt="">
+    <div class="osub" id="o-sub">You run the galaxy's sketchiest restaurant.<br>Aliens show up hungry. You cook with space junk.<br>Don't ask questions. GO FAST.</div>
+    <div class="oscore" id="o-score"></div>
+    <div class="ograde" id="o-grade"></div>
+    <button class="obtn" onclick="startGame()">▶ LET'S COOK</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game-wrap">
+  <header>
+    <div class="logo">🚀 SPACE <span>JUNK</span> CHEF</div>
+    <div class="hud">
+      <div class="hud-pill">🏆 <span class="val" id="h-score">0</span></div>
+      <div class="hud-pill">💰 <span class="val" id="h-credits">50</span></div>
+      <div class="hud-pill">🌀 <span class="val" id="h-round">1/7</span></div>
+      <div class="hud-pill">🔥 <span class="val" id="h-combo">x1</span></div>
+    </div>
+  </header>
+
+  <div id="timer-wrap">
+    <div id="timer-bar"></div>
+    <div id="timer-text">30s</div>
+  </div>
+
+  <div class="main-grid">
+    <!-- Customer -->
+    <div class="panel" id="customer-panel">
+      <div class="panel-title">👾 CUSTOMER</div>
+      <div class="alien-row">
+        <img id="alien-meme" src="" alt="alien">
+        <div class="alien-bubble">
+          <div id="alien-name-txt">???</div>
+          <div id="alien-order-txt">incoming transmission...</div>
+          <div class="needed-label">NEEDS:</div>
+          <div id="recipe-tags"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dish -->
+    <div class="panel" id="dish-panel">
+      <div class="panel-title">🍳 YOUR DISH</div>
+      <div id="drop-zone" class="empty-hint"
+        ondragover="e=>{e.preventDefault();e.currentTarget.classList.add('drag-over')}"
+        ondragleave="e=>e.currentTarget.classList.remove('drag-over')"
+        ondrop="handleDrop(event)">
+      </div>
+      <button id="serve-btn" onclick="serveDish()">🛸 SERVE IT NOW!</button>
+    </div>
+
+    <!-- Conveyor -->
+    <div class="panel" id="conveyor-panel">
+      <div class="panel-title">🏭 JUNK CONVEYOR — drag to dish or click to add</div>
+      <div class="conveyor-track" id="conveyor-track"></div>
+    </div>
+
+    <!-- Events -->
+    <div class="panel" id="events-panel">
+      <div class="panel-title">📡 LOG</div>
+      <div id="events-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  STAR / BG CANVAS
+// ============================================================
+const bgCanvas = document.getElementById('bg-canvas');
+const bgCtx = bgCanvas.getContext('2d');
+let stars = [];
+
+function resizeCanvases() {
+  bgCanvas.width = window.innerWidth;
+  bgCanvas.height = window.innerHeight;
+  pCanvas.width = window.innerWidth;
+  pCanvas.height = window.innerHeight;
+  stars = Array.from({length: 150}, () => ({
+    x: Math.random() * bgCanvas.width,
+    y: Math.random() * bgCanvas.height,
+    r: Math.random() * 1.5 + 0.3,
+    speed: Math.random() * 0.3 + 0.05,
+    twinkle: Math.random() * Math.PI * 2,
+  }));
+}
+
+function drawBg(t) {
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+  const g = bgCtx.createRadialGradient(bgCanvas.width/2, bgCanvas.height/2, 0, bgCanvas.width/2, bgCanvas.height/2, bgCanvas.width);
+  g.addColorStop(0, '#0d0d22');
+  g.addColorStop(1, '#040410');
+  bgCtx.fillStyle = g;
+  bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+  stars.forEach(s => {
+    s.twinkle += 0.02;
+    const alpha = 0.4 + 0.6 * Math.abs(Math.sin(s.twinkle));
+    bgCtx.beginPath();
+    bgCtx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    bgCtx.fillStyle = `rgba(200,210,255,${alpha})`;
+    bgCtx.fill();
+  });
+}
+
+// ============================================================
+//  PARTICLE CANVAS
+// ============================================================
+const pCanvas = document.getElementById('particle-canvas');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+
+function spawnParticles(x, y, color, count = 20) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 8 + 2;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: Math.random() * 0.03 + 0.02,
+      r: Math.random() * 6 + 2,
+      color,
+    });
+  }
+}
+
+function drawParticles() {
+  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.2;
+    p.life -= p.decay;
+    p.vx *= 0.98;
+    pCtx.globalAlpha = p.life;
+    pCtx.fillStyle = p.color;
+    pCtx.beginPath();
+    pCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    pCtx.fill();
+  });
+  pCtx.globalAlpha = 1;
+}
+
+// ============================================================
+//  RAF LOOP
+// ============================================================
+let rafT = 0;
+function loop(t) {
+  rafT = t;
+  drawBg(t);
+  drawParticles();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+window.addEventListener('resize', resizeCanvases);
+resizeCanvases();
+
+// ============================================================
+//  MEME IMAGES (public domain / known meme format GIFs via imgur)
+// ============================================================
+const MEME_IMGS = [
+  { url: 'https://i.imgur.com/gM3zKl5.gif',  cap: 'THIS IS FINE' },
+  { url: 'https://i.imgur.com/wgQPZR5.gif',  cap: 'GALAXY BRAIN' },
+  { url: 'https://i.imgur.com/jMSZ2MD.gif',  cap: 'STONKS' },
+  { url: 'https://i.imgur.com/R6PwKNa.gif',  cap: 'NO CAP' },
+  { url: 'https://i.imgur.com/o8cgHXw.gif',  cap: 'SHEESH' },
+  { url: 'https://i.imgur.com/QRcTlwD.gif',  cap: 'BRUH' },
+  { url: 'https://i.imgur.com/wJBIygX.gif',  cap: 'LOWKEY SLAPS' },
+  { url: 'https://i.imgur.com/3E3gcrH.gif',  cap: 'W RIZZ' },
+];
+
+// Alien profile images (emoji-styled free images via picsum)
+const ALIEN_IMGS = [
+  'https://i.imgur.com/5Bfb3fI.gif',
+  'https://i.imgur.com/MF3BDHB.gif',
+  'https://i.imgur.com/2O4m5dq.gif',
+  'https://i.imgur.com/p8IjXW0.gif',
+  'https://i.imgur.com/nHUGqyD.gif',
+  'https://i.imgur.com/uD4UUOY.gif',
+];
+
+// ============================================================
+//  GAME DATA
+// ============================================================
+const ALIENS = [
+  { name: "Zorbax the Hungry",     quote: (o) => `GIVE ME ${o} OR I EAT YOUR WHOLE STATION.`, img: 0 },
+  { name: "Glorp Supreme",         quote: (o) => `yo bestie can i pls get ${o} rn`, img: 1 },
+  { name: "The Blob Ambassador",   quote: (o) => `i require ${o} for... diplomatic reasons 🫧`, img: 2 },
+  { name: "Emperor Krix",          quote: (o) => `YOU WILL DELIVER ${o}. THIS IS NOT A REQUEST.`, img: 3 },
+  { name: "Void Entity #7",        quote: (o) => `...consume... ${o} ...or darkness...falls...`, img: 4 },
+  { name: "Princess Zaza",         quote: (o) => `a princess DESERVES ${o} and she will GET it`, img: 5 },
+  { name: "Old Man Nebula",        quote: (o) => `back in MY day ${o} cost 3 moon rocks uphill both ways`, img: 0 },
+  { name: "Crab Nebula Jr.",       quote: (o) => `SIDEWAYS I WANT ${o} SERVED SIDEWAYS 🦀`, img: 1 },
+  { name: "Chef Blargh",           quote: (o) => `my sensors require ${o} or i compute sadness.exe`, img: 2 },
+  { name: "Squibbly Jr.",          quote: (o) => `pwease 🥺 can i hav ${o} uwu`, img: 3 },
+];
+
+const ORDERS = [
+  "a dish that tastes like existential dread (but make it cute)",
+  "the flavour of a Tuesday in the 5th dimension",
+  "something that vibrates at the frequency of sadness",
+  "my grandmother's recipe (she was a black hole)",
+  "food that achieves sentience upon eating",
+  "a meal that causes mild temporal displacement",
+  "Neil Armstrong's lost sock but make it gourmet",
+  "the culinary equivalent of watching a sun die",
+  "something warm. my species is very cold rn",
+  "a dish worthy of my 47 stomachs",
+  "whatever's in the dumpster but fancier",
+  "a paradox on a plate, no cap",
+  "the galaxy's most unhinged charcuterie board",
+  "rizz on a plate",
+  "something that goes kinda hard ngl",
+];
+
+const INGREDIENTS = [
+  { e:"🌙", n:"Moon Dust",        c:5  },
+  { e:"⭐", n:"Star Flakes",      c:8  },
+  { e:"🪐", n:"Saturn Ring",      c:12 },
+  { e:"☄️", n:"Comet Tail",      c:10 },
+  { e:"🧲", n:"Space Magnet",     c:7  },
+  { e:"🔩", n:"Cosmic Bolt",      c:4  },
+  { e:"🌑", n:"Dark Matter",      c:15 },
+  { e:"💫", n:"Shooting Star",    c:11 },
+  { e:"🧊", n:"Frozen Void",      c:6  },
+  { e:"🔮", n:"Nebula Gel",       c:13 },
+  { e:"🪨", n:"Asteroid Chunk",   c:5  },
+  { e:"🌊", n:"Space Soup",       c:7  },
+  { e:"🍄", n:"Lunar Shroom",     c:8  },
+  { e:"⚡", n:"Lightning Bolt",   c:9  },
+  { e:"🦠", n:"Galaxy Bacteria",  c:3  },
+  { e:"🎆", n:"Supernova Spice",  c:14 },
+  { e:"🧬", n:"DNA Noodles",      c:11 },
+  { e:"🧃", n:"Black Hole Juice", c:10 },
+  { e:"🫙", n:"Bottled Starlight",c:12 },
+  { e:"🎇", n:"Plasma Sprinkles", c:8  },
+  { e:"🫀", n:"Pulsar Heart",     c:16 },
+  { e:"🧁", n:"Void Cupcake",     c:9  },
+  { e:"🪤", n:"Gravity Trap",     c:6  },
+  { e:"🌶️", n:"Meteor Chili",    c:7  },
+  { e:"🍬", n:"Quasar Candy",     c:5  },
+];
+
+// Chaos events that fire mid-round
+const CHAOS_EVENTS = [
+  { msg: "⚡ PRICE SURGE! All items cost +5 credits!", fn: (s) => { s.conveyorItems.forEach(i=>i.c+=5); } },
+  { msg: "💰 FREE CREDITS! +20 bonus!", fn: (s) => { s.credits += 20; } },
+  { msg: "🔀 CONVEYOR SHUFFLED!", fn: (s) => { s.conveyorItems = shuffle(s.conveyorItems); } },
+  { msg: "⏩ TIME BOOST! +8 seconds!", fn: (s) => { s.timeLeft = Math.min(s.maxTime, s.timeLeft + 8); } },
+  { msg: "💸 INFLATION! -15 credits!", fn: (s) => { s.credits = Math.max(0, s.credits - 15); } },
+  { msg: "🎁 MYSTERY ITEM ADDED!", fn: (s) => { const ri = INGREDIENTS[Math.floor(Math.random()*INGREDIENTS.length)]; s.conveyorItems.push({...ri, c: 0}); } },
+  { msg: "🧲 GRAVITY FLIP! Time halved!", fn: (s) => { s.timeLeft = Math.ceil(s.timeLeft / 2); } },
+  { msg: "✨ DOUBLE POINTS NEXT SERVE!", fn: (s) => { s.doublePoints = true; } },
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+let S = {};
+let timerInterval = null;
+let draggingItem = null;
+let memeTimeout = null;
+let chaosTimeout = null;
+
+function rand(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+function shuffle(a) { return [...a].sort(()=>Math.random()-0.5); }
+
+function resetState() {
+  return {
+    score: 0,
+    credits: 60,
+    round: 1,
+    totalRounds: 7,
+    timeLeft: 25,
+    maxTime: 25,
+    combo: 1,
+    dish: [],
+    requiredIngredients: [],
+    conveyorItems: [],
+    currentAlien: null,
+    doublePoints: false,
+    gameOver: false,
+  };
+}
+
+// ============================================================
+//  GAME FLOW
+// ============================================================
+function startGame() {
+  S = resetState();
+  document.getElementById('overlay').classList.add('hidden');
+  addEvent('📡 Station online. First alien incoming...', 'y');
+  newRound();
+}
+
+function newRound() {
+  clearInterval(timerInterval);
+  clearTimeout(chaosTimeout);
+  S.dish = [];
+  S.maxTime = Math.max(15, 30 - S.round * 1.5);
+  S.timeLeft = S.maxTime;
+  S.doublePoints = false;
+
+  S.currentAlien = rand(ALIENS);
+  const numReq = Math.min(2 + Math.floor(S.round / 2), 5);
+  const shuffled = shuffle(INGREDIENTS);
+  S.requiredIngredients = shuffled.slice(0, numReq).map(i => ({...i, collected: false}));
+
+  const extras = shuffle(INGREDIENTS.filter(i => !S.requiredIngredients.find(r=>r.n===i.n))).slice(0, 9-numReq);
+  S.conveyorItems = shuffle([...S.requiredIngredients.map(i=>({...i})), ...extras]);
+
+  renderAll();
+  startTimer();
+
+  // Schedule chaos event
+  const chaosDelay = (S.maxTime * 0.4 + Math.random() * S.maxTime * 0.2) * 1000;
+  chaosTimeout = setTimeout(triggerChaos, chaosDelay);
+
+  addEvent(`👾 Round ${S.round}: ${S.currentAlien.name} has landed!`, 'y');
+
+  // Occasionally show a meme
+  if (Math.random() < 0.5) setTimeout(showMeme, 1500);
+}
+
+function startTimer() {
+  updateTimerBar();
+  timerInterval = setInterval(() => {
+    S.timeLeft--;
+    updateTimerBar();
+    if (S.timeLeft <= 0) {
+      clearInterval(timerInterval);
+      timeOut();
+    }
+  }, 1000);
+}
+
+function updateTimerBar() {
+  const pct = (S.timeLeft / S.maxTime) * 100;
+  const bar = document.getElementById('timer-bar');
+  bar.style.width = pct + '%';
+  bar.className = S.timeLeft <= 7 ? 'danger' : '';
+  document.getElementById('timer-text').textContent = Math.ceil(S.timeLeft) + 's';
+}
+
+function timeOut() {
+  addEvent('⏰ TIME OUT! Alien left a bad review.', 'b');
+  S.score = Math.max(0, S.score - 5);
+  S.combo = 1;
+  showChaosBanner('⏰ TOO SLOW! -5 pts');
+  flashBg('rgba(255,0,0,0.15)');
+  setTimeout(nextRound, 1600);
+}
+
+function triggerChaos() {
+  if (S.gameOver) return;
+  const ev = rand(CHAOS_EVENTS);
+  ev.fn(S);
+  showChaosBanner(ev.msg);
+  addEvent('🌀 CHAOS: ' + ev.msg, 'y');
+  renderAll();
+}
+
+function serveDish() {
+  if (S.dish.length === 0) { addEvent('🍳 Add SOMETHING to the dish!', 'b'); return; }
+  clearInterval(timerInterval);
+  clearTimeout(chaosTimeout);
+
+  const collected = S.requiredIngredients.filter(r => r.collected).length;
+  const total = S.requiredIngredients.length;
+  const acc = collected / total;
+  const timeBonus = Math.floor(S.timeLeft * 0.8);
+  const mult = S.doublePoints ? 2 : 1;
+
+  let pts = 0, msg = '', color = '#ff006e';
+
+  if (acc === 1) {
+    pts = (40 + timeBonus + S.round * 6) * mult * S.combo;
+    msg = S.combo > 2 ? `🔥 PERFECT x${S.combo} COMBO!` : '✨ PERFECT DISH!';
+    color = '#39ff14';
+    S.combo = Math.min(S.combo + 1, 5);
+    S.credits += 25;
+    spawnParticlesAt('#serve-btn', '#39ff14', 40);
+    showCombo(S.combo > 1 ? `🔥 x${S.combo} COMBO!` : '✨ PERFECT!', '#39ff14');
+    showMeme();
+  } else if (acc >= 0.5) {
+    pts = (Math.floor(20 * acc) + timeBonus) * mult;
+    msg = `👍 OK DISH (${collected}/${total})`;
+    color = '#ffe135';
+    S.combo = Math.max(1, S.combo - 1);
+    S.credits += 12;
+    spawnParticlesAt('#serve-btn', '#ffe135', 20);
+  } else {
+    pts = 0;
+    msg = `🤢 DISGUSTING (${collected}/${total})`;
+    color = '#ff006e';
+    S.combo = 1;
+    flashBg('rgba(255,0,0,0.2)');
+    showMeme('bad');
+  }
+
+  S.score += pts;
+  addEvent(`${msg} +${pts}pts${mult>1?' (2x!)':''}`, pts > 0 ? 'g' : 'b');
+  floatScore(pts, color);
+  renderAll();
+  setTimeout(nextRound, 1400);
+}
+
+function nextRound() {
+  if (S.round >= S.totalRounds) { endGame(); return; }
+  S.round++;
+  newRound();
+}
+
+function endGame() {
+  S.gameOver = true;
+  clearTimeout(memeTimeout);
+  document.getElementById('meme-popup').classList.remove('show');
+
+  let grade;
+  if      (S.score >= 300) grade = '🏆 GALACTIC MASTER CHEF';
+  else if (S.score >= 180) grade = '⭐ STELLAR COOK';
+  else if (S.score >= 90)  grade = '🫧 DECENT SPACE CHEF';
+  else                     grade = '🗑️ ABSOLUTE DISASTER';
+
+  document.getElementById('o-title').innerHTML = '— GAME OVER —';
+  document.getElementById('o-img').src = ALIEN_IMGS[Math.floor(Math.random()*ALIEN_IMGS.length)];
+  document.getElementById('o-sub').textContent = `You survived ${S.totalRounds} alien customers.`;
+  document.getElementById('o-score').textContent = `SCORE: ${S.score}`;
+  document.getElementById('o-grade').textContent = grade;
+  document.getElementById('overlay').classList.remove('hidden');
+  spawnParticles(window.innerWidth/2, window.innerHeight/2, '#ffe135', 60);
+}
+
+// ============================================================
+//  INGREDIENT ACTIONS
+// ============================================================
+function buyIngredient(idx) {
+  const item = S.conveyorItems[idx];
+  if (!item || S.credits < item.c) { addEvent('💸 Not enough credits!', 'b'); return; }
+  S.credits -= item.c;
+  S.dish.push({...item});
+  const req = S.requiredIngredients.find(r => r.n === item.n && !r.collected);
+  if (req) { req.collected = true; addEvent(`✅ Got required: ${item.e} ${item.n}`, 'g'); }
+  else addEvent(`🛒 Added ${item.e} ${item.n}`, null);
+  renderAll();
+}
+
+function removeFromDish(idx) {
+  const item = S.dish[idx];
+  const refund = Math.floor(item.c / 2);
+  S.credits += refund;
+  const req = S.requiredIngredients.find(r => r.n === item.n && r.collected);
+  if (req) req.collected = false;
+  S.dish.splice(idx, 1);
+  addEvent(`🗑️ Removed ${item.e} ${item.n} (+${refund} refund)`, null);
+  renderAll();
+}
+
+// drag and drop
+function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (draggingItem !== null) {
+    buyIngredient(draggingItem);
+    draggingItem = null;
+  }
+}
+
+// ============================================================
+//  RENDER
+// ============================================================
+function renderAll() {
+  // HUD
+  document.getElementById('h-score').textContent = S.score;
+  document.getElementById('h-credits').textContent = '💰' + S.credits;
+  document.getElementById('h-round').textContent = `${S.round}/${S.totalRounds}`;
+  document.getElementById('h-combo').textContent = `x${S.combo}`;
+
+  // Alien
+  const a = S.currentAlien;
+  const orderText = rand(ORDERS);
+  document.getElementById('alien-name-txt').textContent = a.name;
+  document.getElementById('alien-order-txt').textContent = a.quote(orderText);
+  document.getElementById('alien-meme').src = ALIEN_IMGS[a.img % ALIEN_IMGS.length];
+
+  // Recipe tags
+  const tagsEl = document.getElementById('recipe-tags');
+  tagsEl.innerHTML = '';
+  S.requiredIngredients.forEach(r => {
+    const t = document.createElement('span');
+    t.className = 'rtag' + (r.collected ? ' done' : '');
+    t.textContent = `${r.e} ${r.n}`;
+    tagsEl.appendChild(t);
+  });
+
+  // Drop zone
+  const dz = document.getElementById('drop-zone');
+  if (S.dish.length === 0) {
+    dz.classList.add('empty-hint');
+    dz.innerHTML = '';
+  } else {
+    dz.classList.remove('empty-hint');
+    dz.innerHTML = '';
+    S.dish.forEach((item, idx) => {
+      const chip = document.createElement('div');
+      chip.className = 'dish-chip';
+      chip.innerHTML = `${item.e} ${item.n} <span class="x">✕</span>`;
+      chip.onclick = () => removeFromDish(idx);
+      dz.appendChild(chip);
+    });
+  }
+
+  // Conveyor
+  const track = document.getElementById('conveyor-track');
+  track.innerHTML = '';
+  S.conveyorItems.forEach((item, idx) => {
+    const isRequired = S.requiredIngredients.some(r => r.n === item.n && !r.collected);
+    const cantAfford = S.credits < item.c;
+    const card = document.createElement('div');
+    card.className = 'junk-card' + (cantAfford ? ' cant-afford' : '') + (isRequired ? ' required-highlight' : '');
+    card.draggable = !cantAfford;
+    card.innerHTML = `<div class="je">${item.e}</div><div class="jn">${item.n}</div><div class="jc">💰${item.c}</div>`;
+    if (!cantAfford) {
+      card.onclick = () => buyIngredient(idx);
+      card.ondragstart = (e) => {
+        draggingItem = idx;
+        e.dataTransfer.effectAllowed = 'copy';
+      };
+    }
+    track.appendChild(card);
+  });
+}
+
+// ============================================================
+//  VISUAL FX
+// ============================================================
+function addEvent(msg, type) {
+  const list = document.getElementById('events-list');
+  const div = document.createElement('div');
+  div.className = 'ev' + (type ? ' '+type : '');
+  div.textContent = msg;
+  list.prepend(div);
+  while (list.children.length > 3) list.removeChild(list.lastChild);
+}
+
+function showChaosBanner(msg) {
+  const el = document.getElementById('chaos-banner');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function showCombo(msg, color) {
+  const el = document.getElementById('combo-display');
+  el.textContent = msg;
+  el.style.color = color;
+  el.style.textShadow = `0 0 40px ${color}`;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1200);
+}
+
+function floatScore(pts, color) {
+  if (pts <= 0) return;
+  const el = document.createElement('div');
+  el.className = 'float-score';
+  el.textContent = '+' + pts;
+  el.style.color = color;
+  el.style.textShadow = `0 0 20px ${color}`;
+  el.style.left = (window.innerWidth/2 - 40 + Math.random()*80) + 'px';
+  el.style.top = (window.innerHeight/2) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
+function spawnParticlesAt(selector, color, count) {
+  const el = document.querySelector(selector);
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  spawnParticles(r.left + r.width/2, r.top + r.height/2, color, count);
+}
+
+function flashBg(color) {
+  const ov = document.getElementById('event-overlay');
+  ov.style.background = color;
+  ov.classList.add('flashing');
+  setTimeout(() => ov.classList.remove('flashing'), 600);
+}
+
+function showMeme(type) {
+  clearTimeout(memeTimeout);
+  const meme = type === 'bad'
+    ? { url: 'https://i.imgur.com/QRcTlwD.gif', cap: 'BRUH' }
+    : rand(MEME_IMGS);
+
+  document.getElementById('meme-img').src = meme.url;
+  document.getElementById('meme-caption').textContent = meme.cap;
+  const popup = document.getElementById('meme-popup');
+  popup.classList.add('show');
+  popup.onclick = () => popup.classList.remove('show');
+  memeTimeout = setTimeout(() => popup.classList.remove('show'), 3500);
+}
+
+// ============================================================
+//  KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', e => {
+  if (S.gameOver) return;
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); serveDish(); }
+  const n = parseInt(e.key);
+  if (n >= 1 && n <= 9 && n <= S.conveyorItems.length) buyIngredient(n-1);
+});
+
+// ============================================================
+//  INIT OVERLAY
+// ============================================================
+document.getElementById('o-img').src = ALIEN_IMGS[0];
+</script>
+</body>
+</html>
